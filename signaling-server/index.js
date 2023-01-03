@@ -58,10 +58,52 @@ webSocketServer.on("connection", ws => {
             name: ws.name
           });
         } else {
-          
+          sendMsg(ws, {
+            type: "error",
+            message: `The user ${name} doesn't exist`
+          });   
         }
-    }   
+        break; 
+      
+      case "answer":
+        const ansRecipient = users[name];
+        if (!!ansRecipient){
+          sendMsg(ansRecipient, {
+            type: "answer",
+            answer,
+          });
+        } else {
+          sendMsg(ws, {
+            type: "error",
+            message: `User ${name} doesn't exist!`
+          });
+        }
+        break;
+      case "candidate":
+        const candRecipient = users[name];
+        if (!!candRecipient) {
+          sendMsg(candRecipient, {
+            type: "candidate",
+            candidate
+          });
+        }
+        break;
+      case "leave":
+        broadcastMsg(users, "leave", ws);
+        break; 
 
+      default:
+        sendMsg(ws, {
+          type: "error",
+          message: `Command type ${type} is invalid`
+        });
+        break;    
+    }   
+  });
+
+  ws.on("close", function(){
+    delete users[ws.name];
+    broadcastMsg(users, "leave", ws);
   });
   
   ws.send(   // feedback msg upon successful connection
@@ -102,7 +144,6 @@ const broadcastMsg = (clients, type, { id, name: username }) => {
           user: { id, username }
         })
       );
-    }
-    
+    } 
   });
 };
